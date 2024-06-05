@@ -1,0 +1,12 @@
+{
+  "configurations": [
+    {
+      "name": "APP: NASA APOD",
+      "type": "dart",
+      "request": "launch",
+      "program": "customer_app/lib/main.dart"
+      // ,"preLaunchTask": "script_run",
+      // ,"preLaunchTask": "script_clean",
+    }
+  ]
+}

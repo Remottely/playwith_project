@@ -1,0 +1,39 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "script_clean",
+			"type": "shell",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"windows": {
+				"command": "./.vscode/scripts/windows/script_clean.bat"
+			},
+			"linux": {
+				"command": "./.vscode/scripts/unix/script_clean.sh"
+			},
+			"osx": {
+				"command": "./.vscode/scripts/unix/script_clean.sh"
+			},
+		},
+		{
+			"label": "script_run",
+			"type": "shell",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"windows": {
+				"command": "./.vscode/scripts/windows/script_run.bat"
+			},
+			"linux": {
+				"command": "./.vscode/scripts/unix/script_run.sh"
+			},
+			"osx": {
+				"command": "./.vscode/scripts/unix/script_run.sh"
+			},
+		}
+	]
+}
