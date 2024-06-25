@@ -5,6 +5,42 @@ import 'package:flutter_piano_pro/flutter_piano_pro.dart';
 import 'package:flutter_piano_pro/note_model.dart';
 import 'package:playwith_customer_app/main_3.1.3.mid.highlight.dart';
 
+// List<int> generatePatternList() {
+//   List<int> patternList = [];
+//   int currentValue = 4;
+//   bool addThree = false;
+
+//   while (currentValue <= 128) {
+//     patternList.add(currentValue);
+//     currentValue += addThree ? 3 : 4;
+//     addThree = !addThree;
+//   }
+
+//   return patternList;
+// }
+
+// void main() {
+//   List<int> predefinedList = generatePatternList();
+//   List<int> inputValues = [];
+
+//   print('Por favor, insira 128 valores de 1 a 128:');
+//   for (int i = 0; i < 128; i++) {
+//     int? value = int.tryParse(stdin.readLineSync()!);
+//     if (value != null && value >= 1 && value <= 128) {
+//       inputValues.add(value);
+//     } else {
+//       print('Valor inválido. Insira um número entre 1 e 128.');
+//       i--; // Repetir iteração para valor inválido
+//     }
+//   }
+
+//   List<int> matchingValues =
+//       inputValues.where((value) => predefinedList.contains(value)).toList();
+
+//   print('Valores correspondentes da lista:');
+//   print(matchingValues);
+// }
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -12,6 +48,7 @@ void main() async {
     DeviceOrientation.landscapeLeft,
     // DeviceOrientation.landscapeRight,
   ]);
+
   runApp(const MyApp());
 }
 
@@ -32,9 +69,6 @@ class _MyAppState extends State<MyApp> {
         brightness: Brightness.dark,
       ),
       home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Flutter Midi Pro Example'),
-        ),
         body: SingleChildScrollView(
           child: Column(
             children: [
@@ -215,7 +249,7 @@ class _MyAppState extends State<MyApp> {
                             Padding(
                                 padding: const EdgeInsets.all(18),
                                 child: ValueListenableBuilder(
-                                    valueListenable: volume,
+                                    valueListenable: pianoVolume,
                                     child: const Text('Volume: '),
                                     builder: (context, value, child) {
                                       return Row(
@@ -227,14 +261,14 @@ class _MyAppState extends State<MyApp> {
                                             min: 0,
                                             max: 127,
                                             onChanged: selectedSfIdValue != null
-                                                ? (value) =>
-                                                    volume.value = value.toInt()
+                                                ? (value) => pianoVolume.value =
+                                                    value.toInt()
                                                 : null,
                                           )),
                                           const SizedBox(
                                             width: 10,
                                           ),
-                                          Text('${volume.value}'),
+                                          Text('${pianoVolume.value}'),
                                         ],
                                       );
                                     })),
@@ -275,10 +309,13 @@ class _MyAppState extends State<MyApp> {
                                             currentNoteEventValue, child) {
                                           final int? currentNoteNumber =
                                               currentNoteEventValue?.noteNumber;
-                                          final int currentNoteVelocity =
+                                          final int currentVelocity =
                                               currentNoteEventValue?.velocity ??
-                                                  volume.value;
-
+                                                  pianoVolume.value;
+                                          const noteCount =
+                                              15; // 2, 3, 5, 6, 7, 9, 10, 12, 13, 14, 16, 17, 19, 20, 21, 23, 24, 26
+                                          const firstOctave =
+                                              4; // 22, 25, 29, 32
                                           final Map<int, Color>?
                                               highlightButton =
                                               currentNoteNumber == null
@@ -290,17 +327,16 @@ class _MyAppState extends State<MyApp> {
 
                                           return Column(
                                             children: [
-                                              SingleChildScrollView(
-                                                scrollDirection:
-                                                    Axis.horizontal,
-                                                child: RowOfContainers(
-                                                    selectedIndex:
-                                                        currentNoteNumber),
+                                              LessonCanvas(
+                                                selectedIndex:
+                                                    currentNoteNumber,
+                                                noteCount: noteCount,
+                                                firstOctave: firstOctave,
                                               ),
                                               PianoPro(
-                                                noteCount: 15,
+                                                noteCount: noteCount,
                                                 showOctave: true,
-                                                firstOctave: 4,
+                                                firstOctave: firstOctave,
                                                 buttonColors: highlightButton,
                                                 onTapDown: (NoteModel? note,
                                                     int tapId) {
@@ -308,8 +344,7 @@ class _MyAppState extends State<MyApp> {
                                                   pointerAndNote[tapId] = note;
                                                   playNote(
                                                       key: note.midiNoteNumber,
-                                                      velocity:
-                                                          currentNoteVelocity,
+                                                      velocity: currentVelocity,
                                                       channel:
                                                           channelIndex.value,
                                                       sfId: selectedSfIdValue!);
@@ -335,8 +370,7 @@ class _MyAppState extends State<MyApp> {
                                                       channel:
                                                           channelIndex.value,
                                                       key: note.midiNoteNumber,
-                                                      velocity:
-                                                          currentNoteVelocity,
+                                                      velocity: currentVelocity,
                                                       sfId: selectedSfIdValue);
                                                   debugPrint(
                                                       'UPDATE: note= ${note.name + note.octave.toString() + (note.isFlat ? "♭" : '')}, tapId= $tapId');
@@ -393,7 +427,7 @@ final ValueNotifier<int?> selectedSfId = ValueNotifier<int?>(null);
 final instrumentIndex = ValueNotifier<int>(0);
 final bankIndex = ValueNotifier<int>(0);
 final channelIndex = ValueNotifier<int>(0);
-final volume = ValueNotifier<int>(127);
+final pianoVolume = ValueNotifier<int>(127);
 Map<int, NoteModel> pointerAndNote = {};
 
 /// Loads a soundfont file from the specified path.
