@@ -36,9 +36,6 @@ class _MyHomePageState extends State<MyHomePage> {
   MidiPro midiPro = MidiPro();
   final MidiParser parser = MidiParser();
   final ValueNotifier<int?> selectedSfId = ValueNotifier<int?>(null);
-  final ValueNotifier<int> microsecondsPerBeat =
-      ValueNotifier<int>(428756); // equals 140bpm
-  final ValueNotifier<int> ticksPerBeat = ValueNotifier<int>(1024);
 
   @override
   void initState() {
@@ -51,51 +48,14 @@ class _MyHomePageState extends State<MyHomePage> {
         path: _soundFontAssetPath, bank: 0, program: 0);
   }
 
-  void playMidiNotes(MidiFile midiData) async {
-    for (var track in midiData.tracks) {
-      for (var event in track) {
-        if (event is NoteOnEvent) {
-          int delay = calculateDelayInMicroseconds(
-              event.deltaTime, microsecondsPerBeat.value, ticksPerBeat.value);
-
-          await Future.delayed(Duration(microseconds: delay));
-
-          await midiPro.playNote(
-            channel: 0,
-            key: event.noteNumber,
-            velocity: 127,
-            sfId: selectedSfId.value ?? 0,
-          );
-        } else if (event is NoteOffEvent) {
-          int delay = calculateDelayInMicroseconds(
-              event.deltaTime, microsecondsPerBeat.value, ticksPerBeat.value);
-
-          await Future.delayed(Duration(microseconds: delay));
-
-          // await midiPro.stopNote(
-          //   channel: 0,
-          //   key: event.noteNumber,
-          //   sfId: selectedSfId.value ?? 0,
-          // );
-        }
-      }
+  void playMidiNotes(List<int> midiNotes) async {
+    for (int note in midiNotes) {
+      // midiPro.playMidiNote(midi: note, velocity: 127);
+      await midiPro.playNote(
+        channel: 0, key: note, velocity: 127, sfId: selectedSfId.value ?? 0);
+      await Future.delayed(
+          const Duration(milliseconds: 200)); // Ajuste o tempo de acordo
     }
-  }
-
-  // double convertDeltaTimeToSeconds(int ticksPerBeat, int microsecondsPerBeat) {
-  //   double secondsPerTick = (microsecondsPerBeat / 1000000) / ticksPerBeat;
-  //   return deltaTime * secondsPerTick;
-  // }
-
-  int calculateDelayInMicroseconds(
-      int deltaTime, int microsecondsPerBeat, int ticksPerBeat) {
-    // Calcula a duração de um tick em microsegundos.
-    double microsecondsPerTick = microsecondsPerBeat / ticksPerBeat;
-
-    // Calcula o delay total em microsegundos.
-    int delayInMicroseconds = (deltaTime * microsecondsPerTick).toInt();
-
-    return delayInMicroseconds;
   }
 
   void pickAndPlayMidiFromFile() async {
@@ -107,15 +67,38 @@ class _MyHomePageState extends State<MyHomePage> {
     if (result != null) {
       File file = File(result.files.single.path!);
       final midiData = parser.parseMidiFromFile(file);
-      playMidiNotes(midiData);
+
+      // Obter as notas MIDI do arquivo
+      List<int> midiNotes = [];
+      for (var track in midiData.tracks) {
+        for (var event in track) {
+          if (event is NoteOnEvent && event.velocity > 0) {
+            midiNotes.add(event.noteNumber);
+          }
+        }
+      }
+
+      playMidiNotes(midiNotes);
     }
   }
 
   Future<void> playMidiFromAsset(String assetPath) async {
     final ByteData data = await rootBundle.load(assetPath);
     final List<int> bytes = data.buffer.asUint8List();
+
     final MidiFile midiData = parser.parseMidiFromBuffer(bytes);
-    playMidiNotes(midiData);
+
+    // Obter as notas MIDI do arquivo
+    List<int> midiNotes = [];
+    for (var track in midiData.tracks) {
+      for (var event in track) {
+        if (event is NoteOnEvent && event.velocity > 0) {
+          midiNotes.add(event.noteNumber);
+        }
+      }
+    }
+
+    playMidiNotes(midiNotes);
   }
 
   @override

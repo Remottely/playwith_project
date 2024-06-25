@@ -36,28 +36,28 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  final _midi = MidiPro();
+  final midiPro = MidiPro();
   final instrumentIndex = ValueNotifier<int>(0);
   final volume = ValueNotifier<int>(127);
   Future loadSoundfont() async {
-    await _midi.loadSoundfont(
+    await midiPro.loadSoundfont(
         sf2Path: _midiFontAssetPath, instrumentIndex: instrumentIndex.value);
   }
 
   Future loadInstrument() async {
-    await _midi.loadInstrument(instrumentIndex: instrumentIndex.value);
+    await midiPro.loadInstrument(instrumentIndex: instrumentIndex.value);
   }
 
   Map<int, NoteModel> pointerAndNote = {};
 
-  void play(int midi, {int velocity = 127}) {
-    _midi
+  void onPlay(int midi, {int velocity = 127}) {
+    midiPro
         .playMidiNote(midi: midi, velocity: velocity)
         .then((value) => debugPrint('play: $midi'));
   }
 
-  void stop({required int midi}) {
-    _midi.stopMidiNote(midi: midi).then((value) => debugPrint('stop: $midi'));
+  void onStop({required int midi}) {
+    midiPro.stopMidiNote(midi: midi).then((value) => debugPrint('stop: $midi'));
   }
 
   @override
@@ -68,7 +68,7 @@ class _MainPageState extends State<MainPage> {
   @override
   void dispose() {
     super.dispose();
-    _midi.dispose();
+    midiPro.dispose();
   }
 
   @override
@@ -153,7 +153,7 @@ class _MainPageState extends State<MainPage> {
             noteCount: 15,
             onTapDown: (NoteModel? note, int tapId) {
               if (note == null) return;
-              play(note.midiNoteNumber, velocity: volume.value);
+              onPlay(note.midiNoteNumber, velocity: volume.value);
               setState(() => pointerAndNote[tapId] = note);
               debugPrint(
                   'DOWN: note= ${note.name + note.octave.toString() + (note.isFlat ? "♭" : '')}, tapId= $tapId');
@@ -161,14 +161,14 @@ class _MainPageState extends State<MainPage> {
             onTapUpdate: (NoteModel? note, int tapId) {
               if (note == null) return;
               if (pointerAndNote[tapId] == note) return;
-              stop(midi: pointerAndNote[tapId]!.midiNoteNumber);
-              play(note.midiNoteNumber, velocity: volume.value);
+              onStop(midi: pointerAndNote[tapId]!.midiNoteNumber);
+              onPlay(note.midiNoteNumber, velocity: volume.value);
               setState(() => pointerAndNote[tapId] = note);
               debugPrint(
                   'UPDATE: note= ${note.name + note.octave.toString() + (note.isFlat ? "♭" : '')}, tapId= $tapId');
             },
             onTapUp: (int tapId) {
-              stop(midi: pointerAndNote[tapId]!.midiNoteNumber);
+              onStop(midi: pointerAndNote[tapId]!.midiNoteNumber);
               setState(() => pointerAndNote.remove(tapId));
               debugPrint('UP: tapId= $tapId');
             },

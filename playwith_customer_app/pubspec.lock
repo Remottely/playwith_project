@@ -323,10 +323,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_midi_pro
-      sha256: "0e7c3aa5d6528f247444e84593d00126d38ce66642fbc156a9bb068ac3444a25"
+      sha256: ba53de4f3f2e2a584223b45b20317b959d89aa271c2de450c60eab9287b58ee4
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.1"
+    version: "3.1.3"
   flutter_piano_pro:
     dependency: "direct main"
     description:

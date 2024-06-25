@@ -1,10 +1,18 @@
 {
   "configurations": [
     {
-      "name": "playwith_customer_app",
+      "name": "customer_app",
       "type": "dart",
       "request": "launch",
       "program": "playwith_customer_app/lib/main.dart"
     },
+    // {
+    //   "name": "customer_app Web",
+    //   "request": "launch",
+    //   "type": "dart",
+    //   "flutterMode": "debug",
+    //   "program": "playwith_customer_app/lib/main.dart",
+    //   "deviceId": "chrome"
+    // }
   ]
 }

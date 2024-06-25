@@ -7,7 +7,7 @@ import 'package:flutter_midi_pro/flutter_midi_pro.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:piano/piano.dart';
 import 'package:playwith_customer_app/features/physical_instrument/data/chord_repository.dart';
-import 'package:playwith_customer_app/features/physical_instrument/data/flutter_midi.dart';
+import 'package:playwith_customer_app/features/physical_instrument/data/midi_pro.dart';
 import 'package:playwith_customer_app/features/physical_instrument/data/midi_repository.dart';
 import 'package:playwith_customer_app/features/physical_instrument/domain/chord.dart';
 import 'package:playwith_customer_app/features/physical_instrument/domain/match_chord_use_case.dart';
@@ -36,7 +36,7 @@ class ChordsTestPageNotifier extends StateNotifier<ChordsTestPageModel> {
     this._midiRepository,
     this._chordRepository,
     this._matchChordUseCase,
-    this._flutterMidi,
+    this._midi,
   ) : super(
           const ChordsTestPageModel(
             devices: [],
@@ -54,7 +54,7 @@ class ChordsTestPageNotifier extends StateNotifier<ChordsTestPageModel> {
   final ChordRepository _chordRepository;
   final MatchChordUseCase _matchChordUseCase;
   // final FlutterMidi _flutterMidi;
-  final MidiPro _flutterMidi;
+  final MidiPro _midi;
 
   int soundfontId = 0;
 
@@ -101,11 +101,11 @@ class ChordsTestPageNotifier extends StateNotifier<ChordsTestPageModel> {
     //   program: 0,
     // );
 
-    await _flutterMidi.loadSoundfont(
+    await _midi.loadSoundfont(
       sf2Path: _midiFontAssetPath,
       instrumentIndex: 0,
     );
-    await _flutterMidi.loadInstrument(instrumentIndex: 0);
+    await _midi.loadInstrument(instrumentIndex: 0);
   }
 
   @visibleForTesting
@@ -256,7 +256,7 @@ class ChordsTestPageNotifier extends StateNotifier<ChordsTestPageModel> {
     //   velocity: 127,
     //   sfId: soundfontId,
     // );
-    _flutterMidi
+    _midi
         .playMidiNote(
           // midi: note.pitch,
           midi: 60,
@@ -274,9 +274,20 @@ class ChordsTestPageNotifier extends StateNotifier<ChordsTestPageModel> {
     //   sfId: soundfontId,
     //   channel: 0,
     // );
-    _flutterMidi.stopMidiNote(
+    _midi.stopMidiNote(
       // key: note.pitch,
       midi: 60,
     );
+  }
+
+  /// NEW
+  void onPlay(int midi, {int velocity = 127}) {
+    _midi
+        .playMidiNote(midi: midi, velocity: velocity)
+        .then((value) => debugPrint('play: $midi'));
+  }
+
+  void onStop({required int midi}) {
+    _midi.stopMidiNote(midi: midi).then((value) => debugPrint('stop: $midi'));
   }
 }

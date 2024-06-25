@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
+import 'package:flutter_piano_pro/flutter_piano_pro.dart';
+import 'package:flutter_piano_pro/note_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:piano/piano.dart';
 import 'package:playwith_customer_app/features/physical_instrument/view/chords_test_page_model.dart';
@@ -83,6 +85,30 @@ class _PianoWidget extends ConsumerWidget {
       onNotePositionTapped: (position) =>
           notifier.onNotePositionTapped(position),
     );
+    // return PianoPro(
+    //   noteCount: 15,
+    //   onTapDown: (NoteModel? note, int tapId) {
+    //     if (note == null) return;
+    //     notifier.onPlay(note.midiNoteNumber, velocity: volume.value);
+    //     setState(() => pointerAndNote[tapId] = note);
+    //     debugPrint(
+    //         'DOWN: note= ${note.name + note.octave.toString() + (note.isFlat ? "♭" : '')}, tapId= $tapId');
+    //   },
+    //   onTapUpdate: (NoteModel? note, int tapId) {
+    //     if (note == null) return;
+    //     if (pointerAndNote[tapId] == note) return;
+    //     notifier.onStop(midi: pointerAndNote[tapId]!.midiNoteNumber);
+    //     notifier.onPlay(note.midiNoteNumber, velocity: volume.value);
+    //     setState(() => pointerAndNote[tapId] = note);
+    //     debugPrint(
+    //         'UPDATE: note= ${note.name + note.octave.toString() + (note.isFlat ? "♭" : '')}, tapId= $tapId');
+    //   },
+    //   onTapUp: (int tapId) {
+    //     notifier.onStop(midi: pointerAndNote[tapId]!.midiNoteNumber);
+    //     setState(() => pointerAndNote.remove(tapId));
+    //     debugPrint('UP: tapId= $tapId');
+    //   },
+    // );
   }
 }
 
