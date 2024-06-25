@@ -270,15 +270,22 @@ class _MyAppState extends State<MyApp> {
                                       ),
                                     ),
                                     ValueListenableBuilder(
-                                        valueListenable: currentNote,
-                                        builder: (context, value, child) {
+                                        valueListenable: currentNoteEvent,
+                                        builder: (context,
+                                            currentNoteEventValue, child) {
+                                          final int? currentNoteNumber =
+                                              currentNoteEventValue?.noteNumber;
+                                          final int currentNoteVelocity =
+                                              currentNoteEventValue?.velocity ??
+                                                  volume.value;
+
                                           final Map<int, Color>?
                                               highlightButton =
-                                              currentNote.value == null
+                                              currentNoteNumber == null
                                                   ? null
                                                   : {
-                                                      currentNote.value ?? 0:
-                                                          Colors.red,
+                                                      currentNoteNumber:
+                                                          Colors.red
                                                     };
 
                                           return Column(
@@ -288,24 +295,12 @@ class _MyAppState extends State<MyApp> {
                                                     Axis.horizontal,
                                                 child: RowOfContainers(
                                                     selectedIndex:
-                                                        currentNote.value),
+                                                        currentNoteNumber),
                                               ),
                                               PianoPro(
                                                 noteCount: 15,
                                                 showOctave: true,
                                                 firstOctave: 4,
-                                                // buttonColors: const {
-                                                //   30: Colors.red,
-                                                //   31: Colors.orange,
-                                                //   32: Colors.yellow,
-                                                //   33: Colors.green,
-                                                //   34: Colors.blue,
-                                                //   35: Colors.purple,
-                                                //   36: Colors.pink,
-                                                //   37: Colors.brown,
-                                                //   38: Colors.grey,
-                                                //   39: Colors.black,
-                                                // },
                                                 buttonColors: highlightButton,
                                                 onTapDown: (NoteModel? note,
                                                     int tapId) {
@@ -313,7 +308,8 @@ class _MyAppState extends State<MyApp> {
                                                   pointerAndNote[tapId] = note;
                                                   playNote(
                                                       key: note.midiNoteNumber,
-                                                      velocity: volume.value,
+                                                      velocity:
+                                                          currentNoteVelocity,
                                                       channel:
                                                           channelIndex.value,
                                                       sfId: selectedSfIdValue!);
@@ -339,7 +335,8 @@ class _MyAppState extends State<MyApp> {
                                                       channel:
                                                           channelIndex.value,
                                                       key: note.midiNoteNumber,
-                                                      velocity: volume.value,
+                                                      velocity:
+                                                          currentNoteVelocity,
                                                       sfId: selectedSfIdValue);
                                                   debugPrint(
                                                       'UPDATE: note= ${note.name + note.octave.toString() + (note.isFlat ? "♭" : '')}, tapId= $tapId');
@@ -443,9 +440,9 @@ Future<void> playNote({
   int sfId = 1,
 }) async {
   int? sfIdValue = sfId;
-  // if (!loadedSoundfonts.value.containsKey(sfId)) {
-  //   sfIdValue = loadedSoundfonts.value.keys.first;
-  // }
+  if (!loadedSoundfonts.value.containsKey(sfId)) {
+    sfIdValue = loadedSoundfonts.value.keys.first;
+  }
   await midiPro.playNote(
       channel: channel, key: key, velocity: velocity, sfId: sfIdValue);
 }
@@ -457,9 +454,9 @@ Future<void> stopNote({
   int sfId = 1,
 }) async {
   int? sfIdValue = sfId;
-  // if (!loadedSoundfonts.value.containsKey(sfId)) {
-  //   sfIdValue = loadedSoundfonts.value.keys.first;
-  // }
+  if (!loadedSoundfonts.value.containsKey(sfId)) {
+    sfIdValue = loadedSoundfonts.value.keys.first;
+  }
   await midiPro.stopNote(channel: channel, key: key, sfId: sfIdValue);
 }
 

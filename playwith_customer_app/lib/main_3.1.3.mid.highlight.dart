@@ -53,13 +53,14 @@ class _MyHomePageState extends State<MyHomePage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           ValueListenableBuilder(
-              valueListenable: currentNote,
-              builder: (context, value, child) {
+              valueListenable: currentNoteEvent,
+              builder: (context, currentNoteEventValue, child) {
                 return Column(
                   children: [
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
-                      child: RowOfContainers(selectedIndex: currentNote.value),
+                      child: RowOfContainers(
+                          selectedIndex: currentNoteEventValue?.noteNumber),
                     ),
                   ],
                 );
@@ -120,7 +121,8 @@ class RowOfContainers extends StatelessWidget {
   }
 }
 
-final ValueNotifier<int?> currentNote = ValueNotifier<int?>(null);
+final ValueNotifier<NoteOnEvent?> currentNoteEvent =
+    ValueNotifier<NoteOnEvent?>(null);
 const _midi = 'super_mario_64_medley.mid';
 const midiDataAssetPath = 'assets/midi/$_midi';
 
@@ -133,12 +135,12 @@ void playMidiNotes(MidiFile midiData) async {
   for (var track in midiData.tracks) {
     for (var event in track) {
       if (event is NoteOnEvent) {
-        currentNote.value = null;
-
         int delay = calculateDelayInMicroseconds(
             event.deltaTime, microsecondsPerBeat.value, ticksPerBeat.value);
 
         await Future.delayed(Duration(microseconds: delay));
+
+        currentNoteEvent.value = event;
 
         await playNote(
           channel: 0,
@@ -147,12 +149,12 @@ void playMidiNotes(MidiFile midiData) async {
           sfId: selectedSfId.value ?? 0,
         );
       } else if (event is NoteOffEvent) {
-        currentNote.value = event.noteNumber;
-
         int delay = calculateDelayInMicroseconds(
             event.deltaTime, microsecondsPerBeat.value, ticksPerBeat.value);
 
         await Future.delayed(Duration(microseconds: delay));
+
+        currentNoteEvent.value = null;
 
         stopNote(
           channel: 0,
