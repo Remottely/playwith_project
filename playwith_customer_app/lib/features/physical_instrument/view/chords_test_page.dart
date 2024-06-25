@@ -3,7 +3,7 @@ import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:flutter_piano_pro/flutter_piano_pro.dart';
 import 'package:flutter_piano_pro/note_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:piano/piano.dart';
+// import 'package:piano/piano.dart';
 import 'package:playwith_customer_app/features/physical_instrument/view/chords_test_page_model.dart';
 import 'package:playwith_customer_app/features/physical_instrument/view/chords_test_page_notifier.dart';
 

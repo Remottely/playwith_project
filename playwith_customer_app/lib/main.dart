@@ -1,144 +1,449 @@
-import 'dart:io';
-
-import 'package:dart_midi_pro/dart_midi_pro.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_midi_pro/flutter_midi_pro.dart';
+import 'package:flutter_piano_pro/flutter_piano_pro.dart';
+import 'package:flutter_piano_pro/note_model.dart';
+import 'package:playwith_customer_app/main_3.1.3.mid.highlight.dart';
 
-void main() => runApp(const MyApp());
+/// flutter_midi_pro: ^3.1.3
+final MidiPro midiPro = MidiPro();
+final ValueNotifier<Map<int, String>> loadedSoundfonts =
+    ValueNotifier<Map<int, String>>({});
+final ValueNotifier<int?> selectedSfId = ValueNotifier<int?>(null);
+final instrumentIndex = ValueNotifier<int>(0);
+final bankIndex = ValueNotifier<int>(0);
+final channelIndex = ValueNotifier<int>(0);
+final volume = ValueNotifier<int>(127);
+Map<int, NoteModel> pointerAndNote = {};
 
-class MyApp extends StatelessWidget {
+/// Loads a soundfont file from the specified path.
+/// Returns the soundfont ID.
+Future<int> loadSoundfont(String path, int bank, int program) async {
+  if (loadedSoundfonts.value.containsValue(path)) {
+    print('Soundfont file: $path already loaded. Returning ID.');
+    return loadedSoundfonts.value.entries
+        .firstWhere((element) => element.value == path)
+        .key;
+  }
+  final int sfId =
+      await midiPro.loadSoundfont(path: path, bank: bank, program: program);
+  loadedSoundfonts.value = {sfId: path, ...loadedSoundfonts.value};
+  print('Loaded soundfont file: $path with ID: $sfId');
+  return sfId;
+}
+
+/// Selects an instrument on the specified soundfont.
+Future<void> selectInstrument({
+  required int sfId,
+  required int program,
+  int channel = 0,
+  int bank = 0,
+}) async {
+  int? sfIdValue = sfId;
+  if (!loadedSoundfonts.value.containsKey(sfId)) {
+    sfIdValue = loadedSoundfonts.value.keys.first;
+  } else {
+    selectedSfId.value = sfId;
+  }
+  print('Selected soundfont file: $sfIdValue');
+  await midiPro.selectInstrument(
+      sfId: sfIdValue, channel: channel, bank: bank, program: program);
+}
+
+/// Plays a note on the specified channel.
+Future<void> playNote({
+  required int key,
+  required int velocity,
+  int channel = 0,
+  int sfId = 1,
+}) async {
+  int? sfIdValue = sfId;
+  // if (!loadedSoundfonts.value.containsKey(sfId)) {
+  //   sfIdValue = loadedSoundfonts.value.keys.first;
+  // }
+  await midiPro.playNote(
+      channel: channel, key: key, velocity: velocity, sfId: sfIdValue);
+}
+
+/// Stops a note on the specified channel.
+Future<void> stopNote({
+  required int key,
+  int channel = 0,
+  int sfId = 1,
+}) async {
+  int? sfIdValue = sfId;
+  // if (!loadedSoundfonts.value.containsKey(sfId)) {
+  //   sfIdValue = loadedSoundfonts.value.keys.first;
+  // }
+  await midiPro.stopNote(channel: channel, key: key, sfId: sfIdValue);
+}
+
+/// Unloads a soundfont file.
+Future<void> unloadSoundfont(int sfId) async {
+  await midiPro.unloadSoundfont(sfId);
+  loadedSoundfonts.value = {
+    for (final entry in loadedSoundfonts.value.entries)
+      if (entry.key != sfId) entry.key: entry.value
+  };
+  if (selectedSfId.value == sfId) selectedSfId.value = null;
+}
+
+final sf2Paths = [
+  'assets/soundfonts/YDP-GrandPiano-20160804.sf2',
+  'assets/soundfonts/UprightPianoKW-small-20190703.sf2'
+];
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.landscapeLeft,
+    // DeviceOrientation.landscapeRight,
+  ]);
+  runApp(const MyApp());
+}
+
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      title: 'Flutter MIDI Demo',
-      home: MyHomePage(),
-    );
-  }
+  State<MyApp> createState() => _MyAppState();
 }
 
-const _piano = 'UprightPianoKW-small-20190703.sf2';
-const _soundFontAssetPath = 'assets/soundfonts/$_piano';
-const _midi = 'super_mario_64_medley.mid';
-const _midiDataAssetPath = 'assets/midi/$_midi';
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  MidiPro midiPro = MidiPro();
-  final MidiParser parser = MidiParser();
-  final ValueNotifier<int?> selectedSfId = ValueNotifier<int?>(null);
-  final ValueNotifier<int> microsecondsPerBeat =
-      ValueNotifier<int>(428756); // equals 140bpm
-  final ValueNotifier<int> ticksPerBeat = ValueNotifier<int>(1024);
-
-  @override
-  void initState() {
-    super.initState();
-    loadSoundFont();
-  }
-
-  void loadSoundFont() async {
-    selectedSfId.value = await midiPro.loadSoundfont(
-        path: _soundFontAssetPath, bank: 0, program: 0);
-  }
-
-  void playMidiNotes(MidiFile midiData) async {
-    for (var track in midiData.tracks) {
-      for (var event in track) {
-        if (event is NoteOnEvent) {
-          int delay = calculateDelayInMicroseconds(
-              event.deltaTime, microsecondsPerBeat.value, ticksPerBeat.value);
-
-          await Future.delayed(Duration(microseconds: delay));
-
-          await midiPro.playNote(
-            channel: 0,
-            key: event.noteNumber,
-            velocity: 127,
-            sfId: selectedSfId.value ?? 0,
-          );
-        } else if (event is NoteOffEvent) {
-          int delay = calculateDelayInMicroseconds(
-              event.deltaTime, microsecondsPerBeat.value, ticksPerBeat.value);
-
-          await Future.delayed(Duration(microseconds: delay));
-
-          // await midiPro.stopNote(
-          //   channel: 0,
-          //   key: event.noteNumber,
-          //   sfId: selectedSfId.value ?? 0,
-          // );
-        }
-      }
-    }
-  }
-
-  // double convertDeltaTimeToSeconds(int ticksPerBeat, int microsecondsPerBeat) {
-  //   double secondsPerTick = (microsecondsPerBeat / 1000000) / ticksPerBeat;
-  //   return deltaTime * secondsPerTick;
-  // }
-
-  int calculateDelayInMicroseconds(
-      int deltaTime, int microsecondsPerBeat, int ticksPerBeat) {
-    // Calcula a duração de um tick em microsegundos.
-    double microsecondsPerTick = microsecondsPerBeat / ticksPerBeat;
-
-    // Calcula o delay total em microsegundos.
-    int delayInMicroseconds = (deltaTime * microsecondsPerTick).toInt();
-
-    return delayInMicroseconds;
-  }
-
-  void pickAndPlayMidiFromFile() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['mid', 'midi'],
-    );
-
-    if (result != null) {
-      File file = File(result.files.single.path!);
-      final midiData = parser.parseMidiFromFile(file);
-      playMidiNotes(midiData);
-    }
-  }
-
-  Future<void> playMidiFromAsset(String assetPath) async {
-    final ByteData data = await rootBundle.load(assetPath);
-    final List<int> bytes = data.buffer.asUint8List();
-    final MidiFile midiData = parser.parseMidiFromBuffer(bytes);
-    playMidiNotes(midiData);
-  }
-
+class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Flutter MIDI Demo"),
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorSchemeSeed: Colors.amber,
+        brightness: Brightness.dark,
       ),
-      body: Center(
+      home: Scaffold(
+        appBar: AppBar(
+          title: const Text('Flutter Midi Pro Example'),
+        ),
+        body: SingleChildScrollView(
           child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          ElevatedButton(
-            onPressed: pickAndPlayMidiFromFile,
-            child: const Text("Pick and Play MIDI from File"),
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  const SizedBox(
+                    height: 10,
+                  ),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          sf2Paths.length,
+                          (index) => ElevatedButton(
+                            onPressed: () => loadSoundfont(sf2Paths[index],
+                                bankIndex.value, instrumentIndex.value),
+                            child: Text('Load Soundfont ${sf2Paths[index]}'),
+                          ),
+                        )),
+                  ),
+                  const SizedBox(
+                    height: 10,
+                  ),
+                  ValueListenableBuilder(
+                      valueListenable: loadedSoundfonts,
+                      builder: (context, value, child) {
+                        if (value.isEmpty) {
+                          return const Text('No soundfont file loaded');
+                        }
+                        return Column(
+                          children: [
+                            const Text('Loaded Soundfont files:'),
+                            for (final entry in value.entries)
+                              ListTile(
+                                title: Text(entry.value),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    ValueListenableBuilder(
+                                        valueListenable: selectedSfId,
+                                        builder: (context, selectedSfIdValue,
+                                            child) {
+                                          return ElevatedButton(
+                                            onPressed:
+                                                selectedSfIdValue == entry.key
+                                                    ? null
+                                                    : () => selectedSfId.value =
+                                                        entry.key,
+                                            child: Text(
+                                                selectedSfIdValue == entry.key
+                                                    ? 'Selected'
+                                                    : 'Select'),
+                                          );
+                                        }),
+                                    ElevatedButton(
+                                      onPressed: () =>
+                                          unloadSoundfont(entry.key),
+                                      child: const Text('Unload'),
+                                    ),
+                                  ],
+                                ),
+                              )
+                          ],
+                        );
+                      }),
+                  ValueListenableBuilder(
+                      valueListenable: selectedSfId,
+                      builder: (context, selectedSfIdValue, child) {
+                        return Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                ValueListenableBuilder(
+                                    valueListenable: bankIndex,
+                                    builder: (context, bankIndexValue, child) {
+                                      return DropdownButton<int>(
+                                          value: bankIndexValue,
+                                          items: [
+                                            for (int i = 0; i < 128; i++)
+                                              DropdownMenuItem<int>(
+                                                value: i,
+                                                child: Text(
+                                                  'Bank $i',
+                                                  style: const TextStyle(
+                                                      fontSize: 13),
+                                                ),
+                                              )
+                                          ],
+                                          onChanged: (int? value) {
+                                            if (value != null) {
+                                              bankIndex.value = value;
+                                            }
+                                          });
+                                    }),
+                                ValueListenableBuilder(
+                                    valueListenable: instrumentIndex,
+                                    builder: (context, channelValue, child) {
+                                      return DropdownButton<int>(
+                                          value: channelValue,
+                                          items: [
+                                            for (int i = 0; i < 128; i++)
+                                              DropdownMenuItem<int>(
+                                                value: i,
+                                                child: Text(
+                                                  'Instrument $i',
+                                                  style: const TextStyle(
+                                                      fontSize: 13),
+                                                ),
+                                              )
+                                          ],
+                                          onChanged: (int? value) {
+                                            if (value != null) {
+                                              instrumentIndex.value = value;
+                                            }
+                                          });
+                                    }),
+                                ValueListenableBuilder(
+                                    valueListenable: channelIndex,
+                                    builder:
+                                        (context, channelIndexValue, child) {
+                                      return DropdownButton<int>(
+                                          value: channelIndexValue,
+                                          items: [
+                                            for (int i = 0; i < 16; i++)
+                                              DropdownMenuItem<int>(
+                                                value: i,
+                                                child: Text(
+                                                  'Channel $i',
+                                                  style: const TextStyle(
+                                                      fontSize: 13),
+                                                ),
+                                              )
+                                          ],
+                                          onChanged: (int? value) {
+                                            if (value != null) {
+                                              channelIndex.value = value;
+                                            }
+                                          });
+                                    }),
+                              ],
+                            ),
+                            ValueListenableBuilder(
+                                valueListenable: bankIndex,
+                                builder: (context, bankIndexValue, child) {
+                                  return ValueListenableBuilder(
+                                      valueListenable: channelIndex,
+                                      builder:
+                                          (context, channelIndexValue, child) {
+                                        return ValueListenableBuilder(
+                                            valueListenable: instrumentIndex,
+                                            builder: (context,
+                                                instrumentIndexValue, child) {
+                                              return ElevatedButton(
+                                                  onPressed:
+                                                      selectedSfIdValue != null
+                                                          ? () =>
+                                                              selectInstrument(
+                                                                sfId:
+                                                                    selectedSfIdValue,
+                                                                program:
+                                                                    instrumentIndexValue,
+                                                                bank:
+                                                                    bankIndexValue,
+                                                                channel:
+                                                                    channelIndexValue,
+                                                              )
+                                                          : null,
+                                                  child: Text(
+                                                      'Load Instrument $instrumentIndexValue on Bank $bankIndexValue to Channel $channelIndexValue'));
+                                            });
+                                      });
+                                }),
+                            Padding(
+                                padding: const EdgeInsets.all(18),
+                                child: ValueListenableBuilder(
+                                    valueListenable: volume,
+                                    child: const Text('Volume: '),
+                                    builder: (context, value, child) {
+                                      return Row(
+                                        children: [
+                                          child!,
+                                          Expanded(
+                                              child: Slider(
+                                            value: value.toDouble(),
+                                            min: 0,
+                                            max: 127,
+                                            onChanged: selectedSfIdValue != null
+                                                ? (value) =>
+                                                    volume.value = value.toInt()
+                                                : null,
+                                          )),
+                                          const SizedBox(
+                                            width: 10,
+                                          ),
+                                          Text('${volume.value}'),
+                                        ],
+                                      );
+                                    })),
+                            Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: ElevatedButton(
+                                onPressed: !(selectedSfIdValue != null)
+                                    ? null
+                                    : () => unloadSoundfont(
+                                        loadedSoundfonts.value.keys.first),
+                                child: const Text('Unload Soundfont file'),
+                              ),
+                            ),
+                            ValueListenableBuilder(
+                                valueListenable: currentNote,
+                                builder: (context, value, child) {
+                                  return Column(
+                                    children: [
+                                      SingleChildScrollView(
+                                        scrollDirection: Axis.horizontal,
+                                        child: RowOfContainers(
+                                            selectedIndex: currentNote.value),
+                                      ),
+                                    ],
+                                  );
+                                }),
+                            FittedBox(
+                              child: Row(
+                                children: [
+                                  const ElevatedButton(
+                                    onPressed: pickAndPlayMidiFromFile,
+                                    child: Text("Pick and Play MIDI from File"),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () =>
+                                        playMidiFromAsset(midiDataAssetPath),
+                                    child: const Text(
+                                        "Pick and Play MIDI from path"),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Stack(
+                              children: [
+                                PianoPro(
+                                  noteCount: 15,
+                                  showOctave: true,
+                                  firstOctave: 1,
+                                  buttonColors: const {
+                                    30: Colors.red,
+                                    31: Colors.orange,
+                                    32: Colors.yellow,
+                                    33: Colors.green,
+                                    34: Colors.blue,
+                                    35: Colors.purple,
+                                    36: Colors.pink,
+                                    37: Colors.brown,
+                                    38: Colors.grey,
+                                    39: Colors.black,
+                                  },
+                                  onTapDown: (NoteModel? note, int tapId) {
+                                    if (note == null) return;
+                                    pointerAndNote[tapId] = note;
+                                    playNote(
+                                        key: note.midiNoteNumber,
+                                        velocity: volume.value,
+                                        channel: channelIndex.value,
+                                        sfId: selectedSfIdValue!);
+                                    debugPrint(
+                                        'DOWN: note= ${note.name + note.octave.toString() + (note.isFlat ? "♭" : '')}, tapId= $tapId');
+                                  },
+                                  onTapUpdate: (NoteModel? note, int tapId) {
+                                    if (note == null) return;
+                                    if (pointerAndNote[tapId] == note) return;
+                                    stopNote(
+                                        key: pointerAndNote[tapId]!
+                                            .midiNoteNumber,
+                                        channel: channelIndex.value,
+                                        sfId: selectedSfIdValue!);
+                                    pointerAndNote[tapId] = note;
+                                    playNote(
+                                        channel: channelIndex.value,
+                                        key: note.midiNoteNumber,
+                                        velocity: volume.value,
+                                        sfId: selectedSfIdValue);
+                                    debugPrint(
+                                        'UPDATE: note= ${note.name + note.octave.toString() + (note.isFlat ? "♭" : '')}, tapId= $tapId');
+                                  },
+                                  onTapUp: (int tapId) {
+                                    stopNote(
+                                        key: pointerAndNote[tapId]!
+                                            .midiNoteNumber,
+                                        channel: channelIndex.value,
+                                        sfId: selectedSfIdValue!);
+                                    pointerAndNote.remove(tapId);
+                                    debugPrint('UP: tapId= $tapId');
+                                  },
+                                ),
+                                if (selectedSfIdValue == null)
+                                  Positioned.fill(
+                                    child: Container(
+                                      color: Colors.black.withOpacity(0.5),
+                                      child: const Center(
+                                        child: Text(
+                                          'Load Soundfont file\nMust be called before other methods',
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                              ],
+                            )
+                          ],
+                        );
+                      }),
+                ],
+              ),
+            ],
           ),
-          ElevatedButton(
-            // onPressed: pickMidiFile,
-            onPressed: () => playMidiFromAsset(_midiDataAssetPath),
-            child: const Text("Pick and Play MIDI from path"),
-          ),
-        ],
-      )),
+        ),
+      ),
     );
   }
 }
