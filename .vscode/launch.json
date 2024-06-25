@@ -1,0 +1,10 @@
+{
+  "configurations": [
+    {
+      "name": "playwith_customer_app",
+      "type": "dart",
+      "request": "launch",
+      "program": "playwith_customer_app/lib/main.dart"
+    },
+  ]
+}
