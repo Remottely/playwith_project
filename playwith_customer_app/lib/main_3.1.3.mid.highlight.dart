@@ -6,18 +6,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:playwith_customer_app/main.dart';
 
-// void main() async {
-//   WidgetsFlutterBinding.ensureInitialized();
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-//   await SystemChrome.setPreferredOrientations([
-//     DeviceOrientation.landscapeLeft,
-//     // DeviceOrientation.landscapeRight,
-//   ]);
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.landscapeLeft,
+    // DeviceOrientation.landscapeRight,
+  ]);
 
-//   runApp(
-//     const MyApp(),
-//   );
-// }
+  runApp(
+    const MyApp(),
+  );
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -42,7 +42,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    loadSoundFont();
+    loadSoundFont(sf2Paths[0], bankIndex.value, instrumentIndex.value);
   }
 
   @override
@@ -121,23 +121,13 @@ class RowOfContainers extends StatelessWidget {
 }
 
 final ValueNotifier<int?> currentNote = ValueNotifier<int?>(null);
-
-const _piano = 'YDP-GrandPiano-20160804.sf2';
-// const _piano = 'UprightPianoKW-small-20190703.sf2';
-const _soundFontAssetPath = 'assets/soundfonts/$_piano';
 const _midi = 'super_mario_64_medley.mid';
 const midiDataAssetPath = 'assets/midi/$_midi';
 
 final MidiParser parser = MidiParser();
-// final ValueNotifier<int?> selectedSfId = ValueNotifier<int?>(null);
 final ValueNotifier<int> microsecondsPerBeat =
     ValueNotifier<int>(428756); // equals 140bpm
 final ValueNotifier<int> ticksPerBeat = ValueNotifier<int>(1024);
-
-void loadSoundFont() async {
-  selectedSfId.value = await midiPro.loadSoundfont(
-      path: _soundFontAssetPath, bank: 0, program: 0);
-}
 
 void playMidiNotes(MidiFile midiData) async {
   for (var track in midiData.tracks) {
