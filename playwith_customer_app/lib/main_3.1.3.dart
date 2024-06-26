@@ -3,7 +3,8 @@
 // import 'package:flutter_midi_pro/flutter_midi_pro.dart';
 // import 'package:flutter_piano_pro/flutter_piano_pro.dart';
 // import 'package:flutter_piano_pro/note_model.dart';
-// import 'package:playwith_customer_app/main_3.1.3.mid.highlight.dart';
+// import 'package:playwith_customer_app/canvas_view.dart';
+// import 'package:playwith_customer_app/midi_controller.dart';
 
 // void main() async {
 //   WidgetsFlutterBinding.ensureInitialized();
@@ -12,6 +13,7 @@
 //     DeviceOrientation.landscapeLeft,
 //     // DeviceOrientation.landscapeRight,
 //   ]);
+
 //   runApp(const MyApp());
 // }
 
@@ -32,9 +34,6 @@
 //         brightness: Brightness.dark,
 //       ),
 //       home: Scaffold(
-//         appBar: AppBar(
-//           title: const Text('Flutter Midi Pro Example'),
-//         ),
 //         body: SingleChildScrollView(
 //           child: Column(
 //             children: [
@@ -215,7 +214,7 @@
 //                             Padding(
 //                                 padding: const EdgeInsets.all(18),
 //                                 child: ValueListenableBuilder(
-//                                     valueListenable: volume,
+//                                     valueListenable: pianoVolume,
 //                                     child: const Text('Volume: '),
 //                                     builder: (context, value, child) {
 //                                       return Row(
@@ -227,14 +226,14 @@
 //                                             min: 0,
 //                                             max: 127,
 //                                             onChanged: selectedSfIdValue != null
-//                                                 ? (value) =>
-//                                                     volume.value = value.toInt()
+//                                                 ? (value) => pianoVolume.value =
+//                                                     value.toInt()
 //                                                 : null,
 //                                           )),
 //                                           const SizedBox(
 //                                             width: 10,
 //                                           ),
-//                                           Text('${volume.value}'),
+//                                           Text('${pianoVolume.value}'),
 //                                         ],
 //                                       );
 //                                     })),
@@ -270,77 +269,92 @@
 //                                       ),
 //                                     ),
 //                                     ValueListenableBuilder(
-//                                         valueListenable: currentNote,
-//                                         builder: (context, value, child) {
+//                                         valueListenable: currentNoteEvent,
+//                                         builder: (context,
+//                                             currentNoteEventValue, child) {
+//                                           final int? currentNoteNumber =
+//                                               currentNoteEventValue?.noteNumber;
+//                                           final int currentVelocity =
+//                                               currentNoteEventValue?.velocity ??
+//                                                   pianoVolume.value;
+//                                           const noteCount = 15;
+//                                           const firstOctave = 4;
+
+//                                           final Map<int, Color>?
+//                                               highlightButton =
+//                                               currentNoteNumber == null
+//                                                   ? null
+//                                                   : {
+//                                                       currentNoteNumber:
+//                                                           Colors.red
+//                                                     };
+
 //                                           return Column(
 //                                             children: [
-//                                               SingleChildScrollView(
-//                                                 scrollDirection:
-//                                                     Axis.horizontal,
-//                                                 child: RowOfContainers(
-//                                                     selectedIndex:
-//                                                         currentNote.value),
+//                                               CanvasView(
+//                                                 midiNoteNumber:
+//                                                     currentNoteNumber,
+//                                                 noteCount: noteCount,
+//                                                 firstOctave: firstOctave,
+//                                               ),
+//                                               PianoPro(
+//                                                 noteCount: noteCount,
+//                                                 showOctave: true,
+//                                                 firstOctave: firstOctave,
+//                                                 buttonColors: highlightButton,
+//                                                 onTapDown: (NoteModel? note,
+//                                                     int tapId) {
+//                                                   if (note == null) return;
+//                                                   pointerAndNote[tapId] = note;
+//                                                   playNote(
+//                                                       key: note.midiNoteNumber,
+//                                                       velocity: currentVelocity,
+//                                                       channel:
+//                                                           channelIndex.value,
+//                                                       sfId: selectedSfIdValue!);
+//                                                   debugPrint(
+//                                                       'DOWN: note= ${note.name + note.octave.toString() + (note.isFlat ? "♭" : '')}, tapId= $tapId');
+//                                                 },
+//                                                 onTapUpdate: (NoteModel? note,
+//                                                     int tapId) {
+//                                                   if (note == null) return;
+//                                                   if (pointerAndNote[tapId] ==
+//                                                       note) {
+//                                                     return;
+//                                                   }
+//                                                   stopNote(
+//                                                       key:
+//                                                           pointerAndNote[tapId]!
+//                                                               .midiNoteNumber,
+//                                                       channel:
+//                                                           channelIndex.value,
+//                                                       sfId: selectedSfIdValue!);
+//                                                   pointerAndNote[tapId] = note;
+//                                                   playNote(
+//                                                       channel:
+//                                                           channelIndex.value,
+//                                                       key: note.midiNoteNumber,
+//                                                       velocity: currentVelocity,
+//                                                       sfId: selectedSfIdValue);
+//                                                   debugPrint(
+//                                                       'UPDATE: note= ${note.name + note.octave.toString() + (note.isFlat ? "♭" : '')}, tapId= $tapId');
+//                                                 },
+//                                                 onTapUp: (int tapId) {
+//                                                   stopNote(
+//                                                       key:
+//                                                           pointerAndNote[tapId]!
+//                                                               .midiNoteNumber,
+//                                                       channel:
+//                                                           channelIndex.value,
+//                                                       sfId: selectedSfIdValue!);
+//                                                   pointerAndNote.remove(tapId);
+//                                                   debugPrint(
+//                                                       'UP: tapId= $tapId');
+//                                                 },
 //                                               ),
 //                                             ],
 //                                           );
 //                                         }),
-//                                     PianoPro(
-//                                       noteCount: 15,
-//                                       showOctave: true,
-//                                       firstOctave: 1,
-//                                       buttonColors: const {
-//                                         30: Colors.red,
-//                                         31: Colors.orange,
-//                                         32: Colors.yellow,
-//                                         33: Colors.green,
-//                                         34: Colors.blue,
-//                                         35: Colors.purple,
-//                                         36: Colors.pink,
-//                                         37: Colors.brown,
-//                                         38: Colors.grey,
-//                                         39: Colors.black,
-//                                       },
-//                                       onTapDown: (NoteModel? note, int tapId) {
-//                                         if (note == null) return;
-//                                         pointerAndNote[tapId] = note;
-//                                         playNote(
-//                                             key: note.midiNoteNumber,
-//                                             velocity: volume.value,
-//                                             channel: channelIndex.value,
-//                                             sfId: selectedSfIdValue!);
-//                                         debugPrint(
-//                                             'DOWN: note= ${note.name + note.octave.toString() + (note.isFlat ? "♭" : '')}, tapId= $tapId');
-//                                       },
-//                                       onTapUpdate:
-//                                           (NoteModel? note, int tapId) {
-//                                         if (note == null) return;
-//                                         if (pointerAndNote[tapId] == note) {
-//                                           return;
-//                                         }
-//                                         stopNote(
-//                                             key: pointerAndNote[tapId]!
-//                                                 .midiNoteNumber,
-//                                             channel: channelIndex.value,
-//                                             sfId: selectedSfIdValue!);
-//                                         pointerAndNote[tapId] = note;
-//                                         playNote(
-//                                             channel: channelIndex.value,
-//                                             key: note.midiNoteNumber,
-//                                             velocity: volume.value,
-//                                             sfId: selectedSfIdValue);
-//                                         debugPrint(
-//                                             'UPDATE: note= ${note.name + note.octave.toString() + (note.isFlat ? "♭" : '')}, tapId= $tapId');
-//                                       },
-//                                       onTapUp: (int tapId) {
-//                                         stopNote(
-//                                             key: pointerAndNote[tapId]!
-//                                                 .midiNoteNumber,
-//                                             channel: channelIndex.value,
-//                                             sfId: selectedSfIdValue!);
-//                                         pointerAndNote.remove(tapId);
-//                                         debugPrint('UP: tapId= $tapId');
-//                                       },
-//                                     ),
 //                                   ],
 //                                 ),
 //                                 if (selectedSfIdValue == null)
@@ -377,7 +391,7 @@
 // final instrumentIndex = ValueNotifier<int>(0);
 // final bankIndex = ValueNotifier<int>(0);
 // final channelIndex = ValueNotifier<int>(0);
-// final volume = ValueNotifier<int>(127);
+// final pianoVolume = ValueNotifier<int>(127);
 // Map<int, NoteModel> pointerAndNote = {};
 
 // /// Loads a soundfont file from the specified path.
@@ -424,9 +438,9 @@
 //   int sfId = 1,
 // }) async {
 //   int? sfIdValue = sfId;
-//   // if (!loadedSoundfonts.value.containsKey(sfId)) {
-//   //   sfIdValue = loadedSoundfonts.value.keys.first;
-//   // }
+//   if (!loadedSoundfonts.value.containsKey(sfId)) {
+//     sfIdValue = loadedSoundfonts.value.keys.first;
+//   }
 //   await midiPro.playNote(
 //       channel: channel, key: key, velocity: velocity, sfId: sfIdValue);
 // }
@@ -438,9 +452,9 @@
 //   int sfId = 1,
 // }) async {
 //   int? sfIdValue = sfId;
-//   // if (!loadedSoundfonts.value.containsKey(sfId)) {
-//   //   sfIdValue = loadedSoundfonts.value.keys.first;
-//   // }
+//   if (!loadedSoundfonts.value.containsKey(sfId)) {
+//     sfIdValue = loadedSoundfonts.value.keys.first;
+//   }
 //   await midiPro.stopNote(channel: channel, key: key, sfId: sfIdValue);
 // }
 

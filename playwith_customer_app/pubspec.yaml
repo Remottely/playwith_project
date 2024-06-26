@@ -51,6 +51,8 @@ flutter:
     - assets/soundfonts/UprightPianoKW-small-20190703.sf2
     - assets/soundfonts/YDP-GrandPiano-20160804.sf2
     - assets/midi/
+    - assets/midi/test.mid
+    - assets/midi/untitled.mid
     - assets/midi/super_mario_64_medley.mid
-
+    
 # flutter pub run build_runner build --delete-conflicting-outputs

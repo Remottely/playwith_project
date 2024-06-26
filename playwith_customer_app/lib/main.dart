@@ -3,43 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_midi_pro/flutter_midi_pro.dart';
 import 'package:flutter_piano_pro/flutter_piano_pro.dart';
 import 'package:flutter_piano_pro/note_model.dart';
-import 'package:playwith_customer_app/main_3.1.3.mid.highlight.dart';
+import 'package:playwith_customer_app/canvas_view.dart';
+import 'package:playwith_customer_app/midi_controller.dart';
 
-// List<int> generatePatternList() {
-//   List<int> patternList = [];
-//   int currentValue = 4;
-//   bool addThree = false;
-
-//   while (currentValue <= 128) {
-//     patternList.add(currentValue);
-//     currentValue += addThree ? 3 : 4;
-//     addThree = !addThree;
-//   }
-
-//   return patternList;
-// }
-
-// void main() {
-//   List<int> predefinedList = generatePatternList();
-//   List<int> inputValues = [];
-
-//   print('Por favor, insira 128 valores de 1 a 128:');
-//   for (int i = 0; i < 128; i++) {
-//     int? value = int.tryParse(stdin.readLineSync()!);
-//     if (value != null && value >= 1 && value <= 128) {
-//       inputValues.add(value);
-//     } else {
-//       print('Valor inválido. Insira um número entre 1 e 128.');
-//       i--; // Repetir iteração para valor inválido
-//     }
-//   }
-
-//   List<int> matchingValues =
-//       inputValues.where((value) => predefinedList.contains(value)).toList();
-
-//   print('Valores correspondentes da lista:');
-//   print(matchingValues);
-// }
+const noteCount = 15;
+const firstOctave = 4;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -312,83 +280,107 @@ class _MyAppState extends State<MyApp> {
                                           final int currentVelocity =
                                               currentNoteEventValue?.velocity ??
                                                   pianoVolume.value;
-                                          const noteCount =
-                                              15; // 2, 3, 5, 6, 7, 9, 10, 12, 13, 14, 16, 17, 19, 20, 21, 23, 24, 26
-                                          const firstOctave =
-                                              4; // 22, 25, 29, 32
+
                                           final Map<int, Color>?
                                               highlightButton =
                                               currentNoteNumber == null
                                                   ? null
                                                   : {
                                                       currentNoteNumber:
-                                                          Colors.red
+                                                          highlightColor
                                                     };
 
-                                          return Column(
-                                            children: [
-                                              LessonCanvas(
-                                                selectedIndex:
-                                                    currentNoteNumber,
-                                                noteCount: noteCount,
-                                                firstOctave: firstOctave,
-                                              ),
-                                              PianoPro(
-                                                noteCount: noteCount,
-                                                showOctave: true,
-                                                firstOctave: firstOctave,
-                                                buttonColors: highlightButton,
-                                                onTapDown: (NoteModel? note,
-                                                    int tapId) {
-                                                  if (note == null) return;
-                                                  pointerAndNote[tapId] = note;
-                                                  playNote(
-                                                      key: note.midiNoteNumber,
-                                                      velocity: currentVelocity,
-                                                      channel:
-                                                          channelIndex.value,
-                                                      sfId: selectedSfIdValue!);
-                                                  debugPrint(
-                                                      'DOWN: note= ${note.name + note.octave.toString() + (note.isFlat ? "♭" : '')}, tapId= $tapId');
-                                                },
-                                                onTapUpdate: (NoteModel? note,
-                                                    int tapId) {
-                                                  if (note == null) return;
-                                                  if (pointerAndNote[tapId] ==
-                                                      note) {
-                                                    return;
-                                                  }
-                                                  stopNote(
-                                                      key:
-                                                          pointerAndNote[tapId]!
+                                          return SizedBox(
+                                            height: MediaQuery.of(context)
+                                                .size
+                                                .height,
+                                            child: Column(
+                                              children: [
+                                                CanvasView(
+                                                  midiNoteNumber:
+                                                      currentNoteNumber,
+                                                  noteCount: noteCount,
+                                                  firstOctave: firstOctave,
+                                                ),
+                                                SizedBox(
+                                                  height: MediaQuery.of(context)
+                                                              .size
+                                                              .height *
+                                                          0.3 -
+                                                      1,
+                                                  child: PianoPro(
+                                                    scrollHeight: 300,
+                                                    noteCount: noteCount,
+                                                    showOctave: true,
+                                                    firstOctave: firstOctave,
+                                                    buttonColors:
+                                                        highlightButton,
+                                                    onTapDown: (NoteModel? note,
+                                                        int tapId) {
+                                                      if (note == null) return;
+                                                      pointerAndNote[tapId] =
+                                                          note;
+                                                      playNote(
+                                                          key: note
                                                               .midiNoteNumber,
-                                                      channel:
-                                                          channelIndex.value,
-                                                      sfId: selectedSfIdValue!);
-                                                  pointerAndNote[tapId] = note;
-                                                  playNote(
-                                                      channel:
-                                                          channelIndex.value,
-                                                      key: note.midiNoteNumber,
-                                                      velocity: currentVelocity,
-                                                      sfId: selectedSfIdValue);
-                                                  debugPrint(
-                                                      'UPDATE: note= ${note.name + note.octave.toString() + (note.isFlat ? "♭" : '')}, tapId= $tapId');
-                                                },
-                                                onTapUp: (int tapId) {
-                                                  stopNote(
-                                                      key:
-                                                          pointerAndNote[tapId]!
+                                                          velocity:
+                                                              currentVelocity,
+                                                          channel: channelIndex
+                                                              .value,
+                                                          sfId:
+                                                              selectedSfIdValue!);
+                                                      debugPrint(
+                                                          'DOWN: note= ${note.name + note.octave.toString() + (note.isFlat ? "♭" : '')}, tapId= $tapId');
+                                                    },
+                                                    onTapUpdate:
+                                                        (NoteModel? note,
+                                                            int tapId) {
+                                                      if (note == null) return;
+                                                      if (pointerAndNote[
+                                                              tapId] ==
+                                                          note) {
+                                                        return;
+                                                      }
+                                                      stopNote(
+                                                          key: pointerAndNote[
+                                                                  tapId]!
                                                               .midiNoteNumber,
-                                                      channel:
-                                                          channelIndex.value,
-                                                      sfId: selectedSfIdValue!);
-                                                  pointerAndNote.remove(tapId);
-                                                  debugPrint(
-                                                      'UP: tapId= $tapId');
-                                                },
-                                              ),
-                                            ],
+                                                          channel: channelIndex
+                                                              .value,
+                                                          sfId:
+                                                              selectedSfIdValue!);
+                                                      pointerAndNote[tapId] =
+                                                          note;
+                                                      playNote(
+                                                          channel: channelIndex
+                                                              .value,
+                                                          key: note
+                                                              .midiNoteNumber,
+                                                          velocity:
+                                                              currentVelocity,
+                                                          sfId:
+                                                              selectedSfIdValue);
+                                                      debugPrint(
+                                                          'UPDATE: note= ${note.name + note.octave.toString() + (note.isFlat ? "♭" : '')}, tapId= $tapId');
+                                                    },
+                                                    onTapUp: (int tapId) {
+                                                      stopNote(
+                                                          key: pointerAndNote[
+                                                                  tapId]!
+                                                              .midiNoteNumber,
+                                                          channel: channelIndex
+                                                              .value,
+                                                          sfId:
+                                                              selectedSfIdValue!);
+                                                      pointerAndNote
+                                                          .remove(tapId);
+                                                      debugPrint(
+                                                          'UP: tapId= $tapId');
+                                                    },
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           );
                                         }),
                                   ],
