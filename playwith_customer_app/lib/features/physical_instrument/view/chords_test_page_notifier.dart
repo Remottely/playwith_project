@@ -256,6 +256,7 @@ class ChordsTestPageNotifier extends StateNotifier<ChordsTestPageModel> {
     //   velocity: 127,
     //   sfId: soundfontId,
     // );
+
     _midi
         .playMidiNote(
           // midi: note.pitch,

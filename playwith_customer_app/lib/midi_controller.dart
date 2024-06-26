@@ -4,18 +4,23 @@ import 'package:dart_midi_pro/dart_midi_pro.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:playwith_customer_app/main.dart';
+import 'package:playwith_customer_app/piano_class_view.dart';
 
 final ValueNotifier<NoteOnEvent?> currentNoteEvent =
     ValueNotifier<NoteOnEvent?>(null);
 const _midi = 'super_mario_64_medley.mid';
+// const _midi = 'Under-The-Sea-(From-The-Little-Mermaid)-1.mid';
+// const _midi = 'Pirates of the Caribbean - He is a Pirate.mid';
+// const _midi = 'Queen - Bohemian Rhapsody.mid';
+
 // const _midi = 'test.mid';
 // const _midi = 'untitled.mid';
 const midiDataAssetPath = 'assets/midi/$_midi';
 
 final MidiParser parser = MidiParser();
 final ValueNotifier<int> microsecondsPerBeat =
-    ValueNotifier<int>(428756); // equals 140bpm
+    // ValueNotifier<int>(428756); // equals 140bpm
+    ValueNotifier<int>(600000); // equals 200bpm
 final ValueNotifier<int> ticksPerBeat = ValueNotifier<int>(1024);
 
 void playMidiNotes(MidiFile midiData) async {

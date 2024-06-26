@@ -72,15 +72,11 @@ class _FallingNotesState extends State<FallingNotes>
   final List<Note> _notes = [];
 
   late final int firstNoteNumber;
-  final ValueNotifier<NoteOnEvent?> currentNoteEvent =
-      ValueNotifier<NoteOnEvent?>(null);
 
   int totalNotesToShow = 0;
 
   @override
   void initState() {
-    // loadSoundFont(sf2Paths[0], bankIndex.value, instrumentIndex.value);
-    // loadSoundFont(sf2Paths[1], bankIndex.value, instrumentIndex.value);
     totalNotesToShow = widget.noteCount + (widget.noteCount * 5 ~/ 7);
 
     firstNoteNumber = (widget.firstOctave - 1) * 12 + 24; //21;
@@ -91,8 +87,8 @@ class _FallingNotesState extends State<FallingNotes>
       duration: const Duration(milliseconds: 16),
     )..addListener(() {
         setState(() {
-          double beatDurationInSeconds = microsecondsPerBeat.value / 1000000.0;
-          double speed = cut /
+          double beatDurationInSeconds = microsecondsPerBeat.value / 1000000;
+          double speed = (cut / 0.7) /
               (beatDurationInSeconds * ticksPerBeat.value); // Adjusted speed
           for (var note in _notes) {
             note.update(speed);
@@ -254,10 +250,3 @@ int calculateDelayInMicroseconds(
     int deltaTime, int microsecondsPerBeat, int ticksPerBeat) {
   return (deltaTime * microsecondsPerBeat) ~/ ticksPerBeat;
 }
-
-final ValueNotifier<int> microsecondsPerBeat =
-    ValueNotifier<int>(428756); // equals 140bpm
-final ValueNotifier<int> ticksPerBeat =
-    ValueNotifier<int>(1024); // example value
-final ValueNotifier<NoteOnEvent?> currentNoteEvent =
-    ValueNotifier<NoteOnEvent?>(null);
