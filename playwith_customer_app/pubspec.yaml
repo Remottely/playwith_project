@@ -52,6 +52,7 @@ flutter:
     - assets/soundfonts/YDP-GrandPiano-20160804.sf2
     - assets/midi/
     - assets/midi/test.mid
+    - assets/midi/mario.mid
     - assets/midi/untitled.mid
     - assets/midi/super_mario_64_medley.mid
     
